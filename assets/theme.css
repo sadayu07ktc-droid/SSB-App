@@ -1,0 +1,75 @@
+/* ============================================================
+ * assets/theme.css — ธีมกลาง SSB (ใช้ร่วมทุกหน้า)
+ * โหลด: <link rel="stylesheet" href="../assets/theme.css">
+ * ต้องมีฟอนต์: Anuphan + Sarabun (โหลดจาก Google Fonts ในหน้า)
+ * ============================================================ */
+:root{
+  --palm:#1b4332;--palm-2:#2d6a4f;--leaf:#40916c;
+  --oil:#e09f3e;--oil-soft:#fbe9c9;--oil-ink:#8a5e10;
+  --paper:#f6f7f3;--card:#fff;--line:#e3e6df;--ink:#1d211c;--muted:#6c7268;--danger:#b23a2e;
+  --radius:14px;--shadow:0 1px 2px rgba(20,30,20,.06),0 8px 24px rgba(20,30,20,.06);
+}
+*{box-sizing:border-box} html,body{margin:0}
+body{font-family:"Sarabun",system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.5;padding-bottom:40px}
+.wrap{max-width:640px;margin:0 auto;padding:0 14px}
+
+/* ── Header ── */
+.app-header{background:linear-gradient(135deg,var(--palm),var(--palm-2));color:#fff;padding:20px 0 16px;border-radius:0 0 20px 20px}
+.app-header .wrap{display:flex;align-items:center;gap:12px}
+.app-logo{width:40px;height:40px;border-radius:11px;background:var(--oil);display:grid;place-items:center;font-size:20px;flex:0 0 auto}
+.app-header h1{font-family:"Anuphan",sans-serif;font-weight:700;font-size:1.12rem;margin:0}
+.app-header p{margin:2px 0 0;font-size:.8rem;opacity:.85}
+
+/* ── ปุ่มเลือกช่วง / pill ── */
+.ranges{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.rbtn{font-family:"Anuphan",sans-serif;font-weight:700;font-size:.9rem;color:var(--palm);background:#fff;border:1.5px solid var(--line);
+  border-radius:22px;padding:8px 16px;cursor:pointer;transition:.12s}
+.rbtn.active{background:var(--palm);border-color:var(--palm);color:#fff}
+.rbtn:active{transform:scale(.96)}
+
+/* ── การ์ดตัวเลข (tiles) ── */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px}
+.tile .lbl{font-size:.74rem;color:var(--muted);font-weight:600}
+.tile .val{font-family:"Anuphan",sans-serif;font-weight:700;font-size:1.5rem;color:var(--palm);font-variant-numeric:tabular-nums;line-height:1.2}
+.tile .val small{font-size:.8rem;font-weight:600;color:var(--muted)}
+.tile.oil .val{color:var(--oil-ink)}
+
+/* ── Section การ์ด ── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-top:14px;padding:14px}
+.card-h{font-family:"Anuphan",sans-serif;font-weight:700;font-size:.95rem;color:var(--palm);margin:0 0 12px;display:flex;justify-content:space-between;align-items:center}
+.card-h .sub{font-size:.75rem;color:var(--muted);font-weight:500}
+
+/* ── กราฟแท่ง CSS ล้วน ── */
+.bar-row{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:.82rem}
+.bar-row .nm{width:74px;flex:0 0 auto;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;background:#eef4ee;border-radius:6px;height:20px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--oil),#c9821f);border-radius:6px;min-width:2px}
+.bar-row .amt{width:56px;flex:0 0 auto;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--oil-ink)}
+
+/* ── ตาราง ── */
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.data{border-collapse:collapse;width:100%;font-size:.82rem;white-space:nowrap}
+table.data th,table.data td{padding:8px 10px;text-align:right;border-bottom:1px solid #eef1ec}
+table.data th{font-family:"Anuphan",sans-serif;font-weight:700;color:var(--leaf);font-size:.74rem;position:sticky;top:0;background:#fff}
+table.data th:first-child,table.data td:first-child{text-align:left;position:sticky;left:0;background:#fff}
+table.data td{font-variant-numeric:tabular-nums}
+table.data tr:last-child td{border-bottom:none}
+.plate{font-weight:700;color:var(--palm)}
+
+/* ── เมนูการ์ด (hub / landing) ── */
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.menu-card{display:flex;flex-direction:column;gap:5px;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;text-decoration:none;color:var(--ink);transition:.12s}
+.menu-card:active{transform:scale(.98)}
+.menu-card .ic{font-size:1.7rem;line-height:1}
+.menu-card .t{font-family:"Anuphan",sans-serif;font-weight:700;color:var(--palm);font-size:1rem}
+.menu-card .d{font-size:.74rem;color:var(--muted)}
+.menu-card.soon{opacity:.5;pointer-events:none}
+.menu-card.soon .t{color:var(--muted)}
+.badge-soon{font-size:.62rem;font-weight:700;background:var(--oil-soft);color:var(--oil-ink);border-radius:10px;padding:1px 7px;align-self:flex-start}
+
+/* ── สถานะ / footer ── */
+.state{text-align:center;color:var(--muted);padding:30px 10px;font-size:.9rem}
+.state.err{color:var(--danger)}
+.foot{text-align:center;font-size:.72rem;color:var(--muted);margin-top:16px}

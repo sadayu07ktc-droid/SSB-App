@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>สรุป DTC ย้อนหลัง</title>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/theme.css" />
+<style>
+  /* page-specific: (ธีมหลักอยู่ theme.css แล้ว) */
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="wrap">
+    <div class="app-logo">📊</div>
+    <div><h1>สรุป DTC ย้อนหลัง</h1><p id="rangeLabel">กำลังโหลด…</p></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="ranges" id="ranges">
+    <button class="rbtn active" data-r="today">วันนี้</button>
+    <button class="rbtn" data-r="7">7 วัน</button>
+    <button class="rbtn" data-r="month">เดือนนี้</button>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="lbl">ระยะรวม</div><div class="val" id="tDist">–<small> กม.</small></div></div>
+    <div class="tile oil"><div class="lbl">น้ำมันรวม</div><div class="val" id="tFuel">–<small> ล.</small></div></div>
+    <div class="tile"><div class="lbl">เฉลี่ย กม./ลิตร</div><div class="val" id="tKmL">–</div></div>
+    <div class="tile"><div class="lbl">ความเร็วเฉลี่ย</div><div class="val" id="tSpd">–<small> กม./ชม.</small></div></div>
+  </div>
+
+  <div class="card">
+    <h2 class="card-h"><span>🛢️ น้ำมันตามคัน</span><span class="sub" id="barCount"></span></h2>
+    <div id="bars"></div>
+  </div>
+
+  <div class="card">
+    <h2 class="card-h">📋 รายละเอียดตามทะเบียน</h2>
+    <div class="tbl-scroll">
+      <table class="data">
+        <thead><tr>
+          <th>ทะเบียน</th><th>คนขับ</th><th>ระยะ(กม.)</th><th>น้ำมัน(ล.)</th>
+          <th>กม./ล.</th><th>เร็วเฉลี่ย</th><th>เดินเบา(น.)</th><th>เร็วเกิน</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="state" id="state">กำลังโหลด…</div>
+  </div>
+
+  <div class="foot">อ่านตรงจาก Supabase (RPC get_dtc_summary) · ไม่ผ่าน GAS</div>
+</main>
+
+<!-- Supabase client กลาง -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../assets/supabase.js"></script>
+<script>
+const $ = (id)=>document.getElementById(id);
+const fmt = (n,d=0)=>Number(n||0).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+
+function ymd(dt){return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");}
+function rangeOf(r){
+  const now=new Date(), to=ymd(now);
+  if(r==="7"){const f=new Date(now);f.setDate(f.getDate()-6);return{from:ymd(f),to,label:"7 วันล่าสุด"};}
+  if(r==="month"){return{from:ymd(new Date(now.getFullYear(),now.getMonth(),1)),to,label:"เดือนนี้"};}
+  return{from:to,to,label:"วันนี้"};
+}
+
+async function load(r){
+  const rg=rangeOf(r);
+  $("rangeLabel").textContent=rg.label+" · "+rg.from+(rg.from!==rg.to?" ถึง "+rg.to:"");
+  $("state").className="state"; $("state").textContent="กำลังโหลด…";
+  $("tbody").innerHTML=""; $("bars").innerHTML="";
+
+  const {data,error}=await sb.rpc("get_dtc_summary",{p_from:rg.from,p_to:rg.to,p_plate:null});
+  if(error){ $("state").className="state err"; $("state").textContent="โหลดไม่สำเร็จ: "+error.message; return; }
+  if(!data||!data.length){ $("state").textContent="ไม่มีข้อมูลในช่วงนี้"; setTiles({}); return; }
+  render(data);
+}
+
+function setTiles(s){
+  $("tDist").innerHTML=fmt(s.distance_km,1)+'<small> กม.</small>';
+  $("tFuel").innerHTML=fmt(s.fuel_liters,1)+'<small> ล.</small>';
+  $("tKmL").innerHTML=fmt(s.km_per_liter,2);
+  $("tSpd").innerHTML=fmt(s.avg_speed,1)+'<small> กม./ชม.</small>';
+}
+
+function render(items){
+  const s=items.reduce((a,x)=>{a.distance_km+=+x.distance_km||0;a.fuel_liters+=+x.fuel_liters||0;a.run_min+=+x.run_min||0;return a;},{distance_km:0,fuel_liters:0,run_min:0});
+  s.avg_speed=s.run_min>0?s.distance_km/(s.run_min/60):0;
+  s.km_per_liter=s.fuel_liters>0?s.distance_km/s.fuel_liters:0;
+  setTiles(s);
+
+  const top=[...items].sort((a,b)=>b.fuel_liters-a.fuel_liters).slice(0,10);
+  const max=Math.max(...top.map(x=>+x.fuel_liters||0),1);
+  $("barCount").textContent=items.length+" คัน";
+  $("bars").innerHTML=top.map(x=>`
+    <div class="bar-row">
+      <span class="nm">${x.plate||"—"}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(2,(+x.fuel_liters/max*100))}%"></div></div>
+      <span class="amt">${fmt(x.fuel_liters,1)}</span>
+    </div>`).join("");
+
+  $("tbody").innerHTML=items.map(x=>`
+    <tr>
+      <td class="plate">${x.plate||"—"}</td>
+      <td>${x.driver_name||"—"}</td>
+      <td>${fmt(x.distance_km,1)}</td>
+      <td>${fmt(x.fuel_liters,1)}</td>
+      <td>${fmt(x.km_per_liter,2)}</td>
+      <td>${fmt(x.avg_speed,1)}</td>
+      <td>${fmt(x.idle_min)}</td>
+      <td>${fmt(x.overspeed_count)}</td>
+    </tr>`).join("");
+  $("state").textContent="";
+}
+
+$("ranges").addEventListener("click",(e)=>{
+  const b=e.target.closest(".rbtn"); if(!b)return;
+  document.querySelectorAll("#ranges .rbtn").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active"); load(b.dataset.r);
+});
+
+load("today");
+</script>
+</body>
+</html>

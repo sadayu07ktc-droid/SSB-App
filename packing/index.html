@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>แดชบอร์ด Packing</title>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/theme.css" />
+<style>
+  .badge{font-family:"Anuphan",sans-serif;font-size:.66rem;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
+  .b-Waiting{color:var(--oil-ink);background:var(--oil-soft)}
+  .b-Planned{color:#1d4ed8;background:#e5edff}
+  .b-Loading{color:#6d28d9;background:#efe7fd}
+  .b-Delivered{color:var(--palm);background:#dff0e4}
+  .ord{border-top:1px solid var(--line);padding:12px 0}
+  .ord:first-child{border-top:none}
+  .ord .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .cust{font-family:"Anuphan",sans-serif;font-weight:700;color:var(--palm);font-size:.98rem}
+  .route-to{color:var(--muted);font-size:.8rem;margin-top:1px}
+  .meta{color:var(--muted);font-size:.76rem;margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .meta b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .rid{font-variant-numeric:tabular-nums}
+  .sum{margin-top:6px;font-size:.8rem}
+  .sum b{color:var(--oil-ink);font-variant-numeric:tabular-nums}
+  .toggle{background:none;border:none;color:var(--leaf);font-size:.76rem;font-weight:600;cursor:pointer;padding:6px 0 0;font-family:"Sarabun"}
+  .items{display:none;margin-top:8px;border-top:1px dashed var(--line);padding-top:6px}
+  .items.show{display:block}
+  .item{display:flex;justify-content:space-between;font-size:.8rem;padding:2px 0;color:var(--muted)}
+  .item b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .rbox{margin-top:9px;background:#f2f7f2;border:1px solid #dde8dd;border-radius:10px;padding:8px 10px}
+  .rbox .rh{font-family:"Anuphan",sans-serif;font-size:.74rem;font-weight:700;color:var(--palm);margin-bottom:4px}
+  .leg{font-size:.8rem;padding:2px 0;color:var(--ink)}
+  .leg.go{color:var(--muted)}
+  .leg b{font-weight:700}
+  .lst{font-size:.66rem;color:var(--palm);background:#dff0e4;padding:1px 7px;border-radius:999px;margin-left:3px}
+  .mkord{margin-top:9px;width:100%;background:var(--palm,#2f7d3a);color:#fff;border:none;border-radius:10px;
+    padding:10px 12px;font-family:"Anuphan",sans-serif;font-weight:700;font-size:.86rem;cursor:pointer}
+  .mkord:active{opacity:.85}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="wrap">
+    <div class="app-logo">📦</div>
+    <div><h1>แดชบอร์ด Packing</h1><p id="conn">กำลังโหลด…</p></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="tiles">
+    <div class="tile"><div class="lbl">ออเดอร์ค้าง</div><div class="val" id="tOrd">–<small> ใบ</small></div></div>
+    <div class="tile"><div class="lbl">รวมลัง</div><div class="val" id="tQty">–</div></div>
+    <div class="tile oil"><div class="lbl">รวมน้ำหนัก</div><div class="val" id="tTon">–<small> ตัน</small></div></div>
+    <div class="tile"><div class="lbl">รวมปริมาตร</div><div class="val" id="tVol">–<small> m³</small></div></div>
+  </div>
+
+  <div class="ranges" id="filters"></div>
+
+  <div class="card">
+    <h2 class="card-h"><span>🚛 ออเดอร์</span><span class="sub" id="ordCount"></span></h2>
+    <div id="list"><div class="state">กำลังโหลด…</div></div>
+  </div>
+  <div class="foot">SSB-App · Packing · อ่าน Supabase ตรง</div>
+</main>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../assets/supabase.js"></script>
+<script src="../assets/auth.js"></script>
+<script src="packing.js"></script>
+</body>
+</html>
