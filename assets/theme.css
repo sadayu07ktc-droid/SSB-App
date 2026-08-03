@@ -73,3 +73,32 @@ table.data tr:last-child td{border-bottom:none}
 .state{text-align:center;color:var(--muted);padding:30px 10px;font-size:.9rem}
 .state.err{color:var(--danger)}
 .foot{text-align:center;font-size:.72rem;color:var(--muted);margin-top:16px}
+
+/* ── Toast + Modal (assets/ui.js) — แทน alert/confirm/prompt เดิม เข้าธีม SSB ── */
+#ssbToastWrap{position:fixed;top:0;left:0;right:0;z-index:3000;display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 12px;pointer-events:none}
+.ssb-toast{pointer-events:auto;width:100%;max-width:440px;background:var(--card);border-radius:12px;box-shadow:var(--shadow);display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-left:4px solid var(--muted);font-size:14px;line-height:1.5;font-family:"Sarabun",sans-serif;animation:ssbTin .22s ease}
+.ssb-toast.out{animation:ssbTout .18s ease forwards}
+.ssb-toast .ti{font-size:20px;flex:none;line-height:1.3}
+.ssb-toast .tx{flex:1;color:var(--ink);white-space:pre-line;font-weight:500}
+.ssb-toast.ok{border-color:var(--leaf)}.ssb-toast.ok .ti{color:var(--leaf)}
+.ssb-toast.error{border-color:var(--danger)}.ssb-toast.error .ti{color:var(--danger)}
+.ssb-toast.warn{border-color:var(--oil)}.ssb-toast.warn .ti{color:var(--oil-ink)}
+.ssb-toast.info{border-color:var(--palm-2)}.ssb-toast.info .ti{color:var(--palm-2)}
+@keyframes ssbTin{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+@keyframes ssbTout{to{opacity:0;transform:translateY(-14px)}}
+#ssbModal{display:none;position:fixed;inset:0;z-index:3200;background:rgba(20,30,20,.5);align-items:center;justify-content:center;padding:24px}
+#ssbModal.show{display:flex}
+.ssb-mcard{background:var(--card);border-radius:18px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 12px 40px rgba(20,30,20,.28);font-family:"Sarabun",sans-serif;animation:ssbMin .22s ease}
+@keyframes ssbMin{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:none}}
+.ssb-mtop{padding:22px 20px 0;text-align:center}
+.ssb-mic{font-size:42px;line-height:1}
+.ssb-mtitle{font-family:"Anuphan",sans-serif;font-size:17px;font-weight:700;color:var(--ink);margin-top:10px}
+.ssb-mmsg{font-size:13.5px;color:var(--muted);line-height:1.6;margin-top:6px;white-space:pre-line}
+.ssb-mbody{padding:14px 20px 0}
+.ssb-mbody textarea{width:100%;min-height:84px;font-family:"Sarabun",sans-serif;font-size:14px;background:var(--paper);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--ink);outline:none;resize:vertical}
+.ssb-mbody textarea:focus{border-color:var(--leaf)}
+.ssb-mbtns{display:flex;gap:10px;padding:18px 20px 20px}
+.ssb-mbtns>button{flex:1;padding:12px;border-radius:12px;border:none;font-family:"Anuphan",sans-serif;font-size:15px;font-weight:700;cursor:pointer}
+.ssb-cancel{background:var(--paper);color:var(--muted)}
+.ssb-ok{background:var(--palm-2);color:#fff}
+.ssb-ok.danger{background:var(--danger)}

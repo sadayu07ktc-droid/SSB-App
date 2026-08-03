@@ -90,16 +90,23 @@ function routeBox(o){
 
 /* 🚚 แอดมินกด "สร้างออเดอร์" → สร้าง STATUS order (Packing) เข้าคิว "หาคนขับ" บนหน้า tracking */
 async function doCreateOrder(rid){
-  if(!window.SSB_UID){ alert('ไม่พบตัวตนผู้ใช้ — เปิดผ่าน LINE หรือใส่ ?uid=<UID> ใน URL'); return; }
-  if(!confirm('สร้างออเดอร์จัดรถจากคำขอ '+rid+' ?\nออเดอร์จะไปโผล่หน้า "ติดตามสถานะออเดอร์" ให้กด "หาคนขับ" ต่อ')) return;
+  if(!window.SSB_UID){ toast('ไม่พบตัวตนผู้ใช้ — เปิดผ่าน LINE หรือใส่ ?uid=<UID> ใน URL'); return; }
+  const ok=await confirmModal({icon:'🚚',title:'สร้างออเดอร์จัดรถ?',
+    msg:'คำขอ '+rid+'\nออเดอร์จะไปโผล่หน้า “ติดตามสถานะออเดอร์” ให้กด “หาคนขับ” ต่อ',
+    okText:'สร้างออเดอร์',cancelText:'ยกเลิก'});
+  if(!ok) return;
   try{
     const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify({action:'createPackingOrder',userId:window.SSB_UID,requestId:rid})});
-    const d=await res.json();
-    if(!d||!d.success){ alert('ไม่สำเร็จ: '+((d&&d.error)||'unknown')); return; }
-    alert('✅ สร้างออเดอร์ '+d.orderId+' แล้ว\nไปหน้า "ติดตามสถานะออเดอร์" กด "หาคนขับ" ได้เลย');
-    load();
-  }catch(e){ alert('ผิดพลาด: '+(e.message||e)); }
+    const txt=await res.text();
+    let d=null; try{ d=JSON.parse(txt); }catch(_){}
+    if(d && d.success){ toast('✅ สร้างออเดอร์ '+d.orderId+' แล้ว · ไปกด “หาคนขับ” ที่หน้าติดตาม'); load(); return; }
+    if(d && !d.success){ toast('ไม่สำเร็จ: '+(d.error||'unknown')); load(); return; }
+    // ⚠️ GAS POST บางครั้งส่ง response กลับเป็น HTML (ไม่ใช่ JSON) แต่ฝั่ง server ทำสำเร็จแล้ว
+    //    → ไม่ต้อง error · รีเฟรชเช็คสถานะจริง (คำขอจะย้ายไป "จัดแล้ว")
+    toast('✅ ส่งคำขอสร้างออเดอร์แล้ว · กำลังตรวจสอบสถานะ');
+    setTimeout(load, 1500);
+  }catch(e){ toast('ผิดพลาด: '+(e.message||e)); }
 }
 
 (async()=>{ try{ await ssbAuth(LIFF_ID); }catch(e){ console.warn(e); } load(); setInterval(load,60000); })();
