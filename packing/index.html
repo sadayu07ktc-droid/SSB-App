@@ -36,6 +36,9 @@
   .mkord{margin-top:9px;width:100%;background:var(--palm,#2f7d3a);color:#fff;border:none;border-radius:10px;
     padding:10px 12px;font-family:"Anuphan",sans-serif;font-weight:700;font-size:.86rem;cursor:pointer}
   .mkord:active{opacity:.85}
+  .mkord:disabled{opacity:.7;cursor:progress}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;vertical-align:-2px;margin-right:6px;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>

@@ -74,7 +74,7 @@ function card(o){
       '<span>🚚 '+esc(o.vehicle_type||'-')+(o.vehicle_count?' ×'+o.vehicle_count:'')+'</span></div>'+
     '<div class="sum"><b>'+o._n+'</b> รายการ · <b>'+num(o._qty)+'</b> ลัง · <b>'+ton(o._kg)+'</b> ตัน · <b>'+o._m3.toFixed(2)+'</b> m³</div>'+
     (its?('<div class="items">'+its+'</div><button class="toggle" data-n="'+o._n+'">ดูรายการ ('+o._n+') ▼</button>'):'')+
-    (o.status==='Waiting'?('<button class="mkord" onclick="doCreateOrder(\''+esc(o.request_id)+'\')">🚚 สร้างออเดอร์ (จัดรถ)</button>'):'')+
+    (o.status==='Waiting'?('<button class="mkord" onclick="doCreateOrder(this,\''+esc(o.request_id)+'\')">🚚 สร้างออเดอร์ (จัดรถ)</button>'):'')+
     routeBox(o)+
     '</div>';
 }
@@ -89,24 +89,29 @@ function routeBox(o){
 }
 
 /* 🚚 แอดมินกด "สร้างออเดอร์" → สร้าง STATUS order (Packing) เข้าคิว "หาคนขับ" บนหน้า tracking */
-async function doCreateOrder(rid){
+async function doCreateOrder(btn,rid){
+  // เผื่อเรียกแบบเก่า doCreateOrder(rid) — ไม่มี btn
+  if(typeof btn==='string'){ rid=btn; btn=null; }
   if(!window.SSB_UID){ toast('ไม่พบตัวตนผู้ใช้ — เปิดผ่าน LINE หรือใส่ ?uid=<UID> ใน URL'); return; }
   const ok=await confirmModal({icon:'🚚',title:'สร้างออเดอร์จัดรถ?',
     msg:'คำขอ '+rid+'\nออเดอร์จะไปโผล่หน้า “ติดตามสถานะออเดอร์” ให้กด “หาคนขับ” ต่อ',
     okText:'สร้างออเดอร์',cancelText:'ยกเลิก'});
   if(!ok) return;
+  // 🔄 ล็อกปุ่ม + หมุน ระหว่างสร้าง (กันกดซ้ำ + ให้รู้ว่ากดไปแล้ว)
+  const busy=(on)=>{ if(!btn)return; btn.disabled=on; if(on){ btn.dataset.orig=btn.innerHTML; btn.innerHTML='<span class="spin"></span>กำลังสร้างออเดอร์…'; } else if(btn.dataset.orig){ btn.innerHTML=btn.dataset.orig; } };
+  busy(true);
   try{
     const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify({action:'createPackingOrder',userId:window.SSB_UID,requestId:rid})});
     const txt=await res.text();
     let d=null; try{ d=JSON.parse(txt); }catch(_){}
     if(d && d.success){ toast('✅ สร้างออเดอร์ '+d.orderId+' แล้ว · ไปกด “หาคนขับ” ที่หน้าติดตาม'); load(); return; }
-    if(d && !d.success){ toast('ไม่สำเร็จ: '+(d.error||'unknown')); load(); return; }
+    if(d && !d.success){ busy(false); toast('ไม่สำเร็จ: '+(d.error||'unknown')); load(); return; }
     // ⚠️ GAS POST บางครั้งส่ง response กลับเป็น HTML (ไม่ใช่ JSON) แต่ฝั่ง server ทำสำเร็จแล้ว
-    //    → ไม่ต้อง error · รีเฟรชเช็คสถานะจริง (คำขอจะย้ายไป "จัดแล้ว")
+    //    → ไม่ต้อง error · รีเฟรชเช็คสถานะจริง (คำขอจะย้ายไป "จัดแล้ว") · คงปุ่มหมุนไว้จนโหลดใหม่
     toast('✅ ส่งคำขอสร้างออเดอร์แล้ว · กำลังตรวจสอบสถานะ');
     setTimeout(load, 1500);
-  }catch(e){ toast('ผิดพลาด: '+(e.message||e)); }
+  }catch(e){ busy(false); toast('ผิดพลาด: '+(e.message||e)); }
 }
 
 (async()=>{ try{ await ssbAuth(LIFF_ID); }catch(e){ console.warn(e); } load(); setInterval(load,60000); })();
