@@ -10,6 +10,9 @@ const num=n=>(n||0).toLocaleString('en-US');
 const qtyBy=its=>its.reduce((m,x)=>{const u=String(x.unit||'').trim()||'ลัง';m[u]=(m[u]||0)+(+x.qty||0);return m;},{});
 const qtyTxt=(q,tag)=>{const k=Object.keys(q).filter(u=>q[u]);if(!k.length)return tag?'<b>0</b> ลัง':'0';k.sort((a,b)=>(a==='ลัง'?-1:b==='ลัง'?1:0));return k.map(u=>tag?'<b>'+num(q[u])+'</b> '+esc(u):num(q[u])+'<small> '+esc(u)+'</small>').join(' · ');};
 const ton=kg=>((kg||0)/1000).toFixed(2);
+/* วันที่ไทย: 2026-11-11 → พ. 11/11/2569 */
+const DOW=['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+const dTH=s=>{const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})/);if(!m)return String(s||'-');const d=new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));return DOW[d.getUTCDay()]+' '+m[3]+'/'+m[2]+'/'+(+m[1]+543);};
 const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
 async function load(){
@@ -66,18 +69,28 @@ function render(){
 }
 
 function card(o){
-  const its=(ITEMS[o.request_id]||[]).map(it=>
-    '<div class="item"><span>'+esc(it.product_name||it.product_id)+'</span>'+
-    '<b>'+num(+it.qty)+' '+esc(it.unit||'')+' · '+num(Math.round(it.weight_kg||0))+' กก.</b></div>').join('');
+  const mall=!!o.mall_ref;   /* 🚜 ขอรถไร่จากหน้าแพลนรถ Packing (งานห้าง) */
+  const its=(ITEMS[o.request_id]||[]).slice().sort((a,b)=>(a.id||0)-(b.id||0)).map(it=>{
+    const kg=+it.weight_kg||0, w=mall?(kg?ton(kg)+' ตัน':''):num(Math.round(kg))+' กก.';
+    return '<div class="item"><span>'+esc(it.product_name||it.product_id)+'</span>'+
+    '<b>'+num(+it.qty)+' '+esc(it.unit||'')+(w?' · '+w:'')+'</b></div>'+(it.note?'<div class="inote">📝 '+esc(it.note)+'</div>':'');}).join('');
+  /* หมายเหตุคำขอ: แยก "ขึ้นสินค้า …" / "งานห้าง …" ออกมาเป็นแถวเด่น */
+  const parts=String(o.note||'').split(' · ').map(s=>s.trim()).filter(Boolean);
+  const loadP=parts.find(s=>/^ขึ้นสินค้า /.test(s)), dlvP=parts.find(s=>/^งานห้าง /.test(s));
+  const rest=parts.filter(s=>s!==loadP&&s!==dlvP&&!/^🚜 งานห้าง/.test(s));
   return '<div class="ord">'+
-    '<div class="top"><div><div class="cust">'+esc(o.customer_name||'-')+'</div>'+
+    '<div class="top"><div><div class="cust">'+(mall?'<span class="mall">🚜 งานห้าง</span> ':'')+esc(o.customer_name||'-')+'</div>'+
       '<div class="route-to">→ '+esc(o.destination||'-')+'</div></div>'+
       '<span class="badge b-'+o.status+'">'+(LABEL[o.status]||o.status)+'</span></div>'+
     '<div class="meta"><span class="rid">'+esc(o.request_id)+'</span>'+
-      '<span>📅 '+esc(o.want_date||'-')+'</span>'+
-      '<span>🚚 '+esc(o.vehicle_type||'-')+(o.vehicle_count?' ×'+o.vehicle_count:'')+'</span></div>'+
+      '<span>📅 '+(mall?'งานห้าง ':'')+'<b>'+esc(mall&&dlvP?dlvP.replace(/^งานห้าง /,''):dTH(o.want_date))+'</b></span>'+
+      (loadP?'<span>📦 ขึ้นสินค้า <b>'+esc(loadP.replace(/^ขึ้นสินค้า /,''))+'</b></span>':'')+
+      (o.load_time?'<span>🕘 เข้าโหลด <b>'+esc(String(o.load_time).slice(0,5))+' น.</b></span>':'')+
+      '<span>🚚 '+esc(o.vehicle_type||'-')+(o.vehicle_count?' ×'+o.vehicle_count:'')+'</span>'+
+      (o.requester_name?'<span>👤 '+esc(o.requester_name)+'</span>':'')+'</div>'+
+    (rest.length?'<div class="pnote">📝 '+rest.map(esc).join(' · ')+'</div>':'')+
     '<div class="sum"><b>'+o._n+'</b> รายการ · '+qtyTxt(o._qu,true)+' · <b>'+ton(o._kg)+'</b> ตัน · <b>'+o._m3.toFixed(2)+'</b> m³</div>'+
-    (its?('<div class="items">'+its+'</div><button class="toggle" data-n="'+o._n+'">ดูรายการ ('+o._n+') ▼</button>'):'')+
+    (its?('<div class="items'+(mall?' show':'')+'">'+its+'</div><button class="toggle" data-n="'+o._n+'">'+(mall?'ซ่อนรายการ ▲':'ดูรายการ ('+o._n+') ▼')+'</button>'):'')+
     (o.status==='Waiting'?('<button class="mkord" onclick="doCreateOrder(this,\''+esc(o.request_id)+'\')">🚚 สร้างออเดอร์ (จัดรถ)</button>'):'')+
     routeBox(o)+
     '</div>';
