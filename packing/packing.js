@@ -6,6 +6,9 @@ const LABEL={Waiting:'รอจัด',Planned:'จัดแล้ว',Loading:'
 let ORDERS=[],ITEMS={},ROUTES={},filter='ค้าง';
 const $=s=>document.querySelector(s);
 const num=n=>(n||0).toLocaleString('en-US');
+/* จำนวนแยกตามหน่วย (ลัง/พาเลท…) — ไม่บวกพาเลทรวมกับลัง */
+const qtyBy=its=>its.reduce((m,x)=>{const u=String(x.unit||'').trim()||'ลัง';m[u]=(m[u]||0)+(+x.qty||0);return m;},{});
+const qtyTxt=(q,tag)=>{const k=Object.keys(q).filter(u=>q[u]);if(!k.length)return tag?'<b>0</b> ลัง':'0';k.sort((a,b)=>(a==='ลัง'?-1:b==='ลัง'?1:0));return k.map(u=>tag?'<b>'+num(q[u])+'</b> '+esc(u):num(q[u])+'<small> '+esc(u)+'</small>').join(' · ');};
 const ton=kg=>((kg||0)/1000).toFixed(2);
 const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
@@ -24,6 +27,7 @@ async function load(){
       const its=ITEMS[o.request_id]||[];
       o._n=its.length;
       o._qty=its.reduce((s,x)=>s+(+x.qty||0),0);
+      o._qu=qtyBy(its);
       o._kg=its.reduce((s,x)=>s+(+x.weight_kg||0),0);
       o._m3=its.reduce((s,x)=>s+(+x.volume_m3||0),0);
       return o;
@@ -38,9 +42,9 @@ async function load(){
 
 function render(){
   const pending=ORDERS.filter(o=>PENDING.includes(o.status));
-  const t=pending.reduce((a,o)=>{a.q+=o._qty;a.kg+=o._kg;a.m3+=o._m3;return a;},{q:0,kg:0,m3:0});
+  const t=pending.reduce((a,o)=>{Object.keys(o._qu).forEach(u=>a.qu[u]=(a.qu[u]||0)+o._qu[u]);a.kg+=o._kg;a.m3+=o._m3;return a;},{qu:{},kg:0,m3:0});
   $('#tOrd').innerHTML=pending.length+'<small> ใบ</small>';
-  $('#tQty').textContent=num(t.q);
+  $('#tQty').innerHTML=qtyTxt(t.qu,false);
   $('#tTon').innerHTML=ton(t.kg)+'<small> ตัน</small>';
   $('#tVol').innerHTML=t.m3.toFixed(2)+'<small> m³</small>';
 
@@ -72,7 +76,7 @@ function card(o){
     '<div class="meta"><span class="rid">'+esc(o.request_id)+'</span>'+
       '<span>📅 '+esc(o.want_date||'-')+'</span>'+
       '<span>🚚 '+esc(o.vehicle_type||'-')+(o.vehicle_count?' ×'+o.vehicle_count:'')+'</span></div>'+
-    '<div class="sum"><b>'+o._n+'</b> รายการ · <b>'+num(o._qty)+'</b> ลัง · <b>'+ton(o._kg)+'</b> ตัน · <b>'+o._m3.toFixed(2)+'</b> m³</div>'+
+    '<div class="sum"><b>'+o._n+'</b> รายการ · '+qtyTxt(o._qu,true)+' · <b>'+ton(o._kg)+'</b> ตัน · <b>'+o._m3.toFixed(2)+'</b> m³</div>'+
     (its?('<div class="items">'+its+'</div><button class="toggle" data-n="'+o._n+'">ดูรายการ ('+o._n+') ▼</button>'):'')+
     (o.status==='Waiting'?('<button class="mkord" onclick="doCreateOrder(this,\''+esc(o.request_id)+'\')">🚚 สร้างออเดอร์ (จัดรถ)</button>'):'')+
     routeBox(o)+
