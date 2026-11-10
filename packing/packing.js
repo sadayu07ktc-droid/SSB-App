@@ -3,6 +3,13 @@ const GAS_URL='https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjf
 const LIFF_ID='';   // ⚠️ ใส่ LIFF ID ของ SSB-App ที่นี่ (เปิดผ่าน LINE) · เว้นว่าง = เทสด้วย ?uid=<UID> ใน URL
 const PENDING=['Waiting','Planned','Loading'];
 const LABEL={Waiting:'รอจัด',Planned:'จัดแล้ว',Loading:'กำลังขึ้นของ',Delivered:'ส่งแล้ว'};
+/* สถานะออเดอร์ที่ยังไม่ออกวิ่ง (นับเป็น "จัดแล้ว") */
+const OSTEP0=['ไม่มีคนขับรับงาน','รอคนขับ','รอคนขับรับงาน','รับงานแล้ว','ยกเลิก'];
+/* ข้อความใต้ป้ายสถานะ จากออเดอร์จริง */
+function drvLine(o){const x=o._o;if(!x)return '';
+  const has=!!(x.driver_name||x.plate), wait=!has||x.status==='ไม่มีคนขับรับงาน'||x.status==='รอคนขับ'||x.status==='รอคนขับรับงาน';
+  const st=x.status==='ยกเลิก'?'❌ ออเดอร์ถูกยกเลิก':wait?'⏳ รอคนขับรับงาน':x.status==='รับงานแล้ว'?'✅ ได้คนขับแล้ว':x.status==='เสร็จงาน'?'🏁 เสร็จงาน':'🚚 '+x.status;
+  return '<div class="drv'+(wait?' w':'')+'"><b>'+esc(st)+'</b>'+(has&&!wait?' · 🧑 '+esc(x.driver_name||'-')+(x.plate?' · '+esc(x.plate):''):'')+'<span class="oid">'+esc(x.order_id)+'</span></div>';}
 let ORDERS=[],ITEMS={},ROUTES={},filter='ค้าง';
 const $=s=>document.querySelector(s);
 const num=n=>(n||0).toLocaleString('en-US');
@@ -24,6 +31,15 @@ async function load(){
     ]);
     if(r1.error) throw r1.error;
     const reqs=r1.data||[], items=r2.data||[], palm=r3.data||[];
+    /* ออเดอร์ที่สร้างจากคำขอ (linked_job_id = PKR-…) → สถานะจริงของคนขับ + ชื่อคนขับ/ทะเบียน */
+    const rids=reqs.filter(o=>o.status!=='Waiting'&&o.status!=='ยกเลิก').map(o=>o.request_id);
+    const OL={};
+    if(rids.length){const r4=await sb.from('orders').select('order_id,linked_job_id,status,driver_name,plate,created_at').in('linked_job_id',rids).order('created_at',{ascending:true});
+      (r4.data||[]).forEach(x=>{if(x.status!=='ยกเลิก'||!OL[x.linked_job_id])OL[x.linked_job_id]=x;});}
+    reqs.forEach(o=>{const x=OL[o.request_id];o._o=x||null;if(!x)return;
+      /* เลื่อนสถานะตามออเดอร์ (ไม่ถอยหลัง): ส่งแล้ว = เสร็จงาน · วิ่งงานอยู่ = กำลังขึ้นของ/วิ่ง */
+      if(x.status==='เสร็จงาน')o.status='Delivered';
+      else if(o.status==='Planned'&&!OSTEP0.includes(x.status))o.status='Loading';});
     ITEMS={}; items.forEach(it=>{(ITEMS[it.request_id]=ITEMS[it.request_id]||[]).push(it);});
     ROUTES={}; palm.forEach(l=>{(ROUTES[l.route_id]=ROUTES[l.route_id]||[]).push(l);});
     ORDERS=reqs.map(o=>{
@@ -88,6 +104,7 @@ function card(o){
       (o.load_time?'<span>🕘 เข้าโหลด <b>'+esc(String(o.load_time).slice(0,5))+' น.</b></span>':'')+
       '<span>🚚 '+esc(o.vehicle_type||'-')+(o.vehicle_count?' ×'+o.vehicle_count:'')+'</span>'+
       (o.requester_name?'<span>👤 '+esc(o.requester_name)+'</span>':'')+'</div>'+
+    drvLine(o)+
     (rest.length?'<div class="pnote">📝 '+rest.map(esc).join(' · ')+'</div>':'')+
     '<div class="sum"><b>'+o._n+'</b> รายการ · '+qtyTxt(o._qu,true)+' · <b>'+ton(o._kg)+'</b> ตัน · <b>'+o._m3.toFixed(2)+'</b> m³</div>'+
     (its?('<div class="items'+(mall?' show':'')+'">'+its+'</div><button class="toggle" data-n="'+o._n+'">'+(mall?'ซ่อนรายการ ▲':'ดูรายการ ('+o._n+') ▼')+'</button>'):'')+
