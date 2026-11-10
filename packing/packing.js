@@ -3,8 +3,6 @@ const GAS_URL='https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjf
 const LIFF_ID='';   // ⚠️ ใส่ LIFF ID ของ SSB-App ที่นี่ (เปิดผ่าน LINE) · เว้นว่าง = เทสด้วย ?uid=<UID> ใน URL
 const PENDING=['Waiting','Planned','Loading'];
 const LABEL={Waiting:'รอจัด',Planned:'จัดแล้ว',Loading:'กำลังขึ้นของ',Delivered:'ส่งแล้ว'};
-/* สถานะออเดอร์ที่ยังไม่ออกวิ่ง (นับเป็น "จัดแล้ว") */
-const OSTEP0=['ไม่มีคนขับรับงาน','รอคนขับ','รอคนขับรับงาน','รับงานแล้ว','ยกเลิก'];
 /* ข้อความใต้ป้ายสถานะ จากออเดอร์จริง */
 function drvLine(o){const x=o._o;if(!x)return '';
   const has=!!(x.driver_name||x.plate), wait=!has||x.status==='ไม่มีคนขับรับงาน'||x.status==='รอคนขับ'||x.status==='รอคนขับรับงาน';
@@ -31,15 +29,8 @@ async function load(){
     ]);
     if(r1.error) throw r1.error;
     const reqs=r1.data||[], items=r2.data||[], palm=r3.data||[];
-    /* ออเดอร์ที่สร้างจากคำขอ (linked_job_id = PKR-…) → สถานะจริงของคนขับ + ชื่อคนขับ/ทะเบียน */
-    const rids=reqs.filter(o=>o.status!=='Waiting'&&o.status!=='ยกเลิก').map(o=>o.request_id);
-    const OL={};
-    if(rids.length){const r4=await sb.from('orders').select('order_id,linked_job_id,status,driver_name,plate,created_at').in('linked_job_id',rids).order('created_at',{ascending:true});
-      (r4.data||[]).forEach(x=>{if(x.status!=='ยกเลิก'||!OL[x.linked_job_id])OL[x.linked_job_id]=x;});}
-    reqs.forEach(o=>{const x=OL[o.request_id];o._o=x||null;if(!x)return;
-      /* เลื่อนสถานะตามออเดอร์ (ไม่ถอยหลัง): ส่งแล้ว = เสร็จงาน · วิ่งงานอยู่ = กำลังขึ้นของ/วิ่ง */
-      if(x.status==='เสร็จงาน')o.status='Delivered';
-      else if(o.status==='Planned'&&!OSTEP0.includes(x.status))o.status='Loading';});
+    /* ออเดอร์ที่สร้างจากคำขอ: DB trigger trg_pk_req_sync_from_order copy สถานะ/คนขับ/ทะเบียน มาที่ pk_requests (order_id/order_status/driver_name/plate) */
+    reqs.forEach(o=>{o._o=o.order_id?{order_id:o.order_id,status:o.order_status||'',driver_name:o.driver_name,plate:o.plate}:null;});
     ITEMS={}; items.forEach(it=>{(ITEMS[it.request_id]=ITEMS[it.request_id]||[]).push(it);});
     ROUTES={}; palm.forEach(l=>{(ROUTES[l.route_id]=ROUTES[l.route_id]||[]).push(l);});
     ORDERS=reqs.map(o=>{
