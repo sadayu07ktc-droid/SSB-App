@@ -2,7 +2,7 @@
 const GAS_URL='https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjfBQUSYaTEdrxkdXUVN98G68XseCquhDeXfMgU8cVYaY/exec';
 const LIFF_ID='';   // ⚠️ ใส่ LIFF ID ของ SSB-App ที่นี่ (เปิดผ่าน LINE) · เว้นว่าง = เทสด้วย ?uid=<UID> ใน URL
 const PENDING=['Waiting','Planned','Loading'];
-const LABEL={Waiting:'รอจัด',Planned:'จัดแล้ว',Loading:'กำลังขึ้นของ',Delivered:'ส่งแล้ว'};
+const LABEL={Waiting:'รอจัด',Planned:'จัดแล้ว',Loading:'วิ่งงานแล้ว',Delivered:'ส่งแล้ว'};
 /* ข้อความใต้ป้ายสถานะ จากออเดอร์จริง */
 function drvLine(o){const x=o._o;if(!x)return '';
   const has=!!(x.driver_name||x.plate), wait=!has||x.status==='ไม่มีคนขับรับงาน'||x.status==='รอคนขับ'||x.status==='รอคนขับรับงาน';
