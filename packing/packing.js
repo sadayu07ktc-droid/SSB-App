@@ -95,13 +95,23 @@ function card(o){
       (o.load_time?'<span>🕘 เข้าโหลด <b>'+esc(String(o.load_time).slice(0,5))+' น.</b></span>':'')+
       '<span>🚚 '+esc(o.vehicle_type||'-')+(o.vehicle_count?' ×'+o.vehicle_count:'')+'</span>'+
       (o.requester_name?'<span>👤 '+esc(o.requester_name)+'</span>':'')+'</div>'+
-    drvLine(o)+
+    drvLine(o)+slipLine(o)+
     (rest.length?'<div class="pnote">📝 '+rest.map(esc).join(' · ')+'</div>':'')+
     '<div class="sum"><b>'+o._n+'</b> รายการ · '+qtyTxt(o._qu,true)+' · <b>'+ton(o._kg)+'</b> ตัน · <b>'+o._m3.toFixed(2)+'</b> m³</div>'+
     (its?('<div class="items'+(mall?' show':'')+'">'+its+'</div><button class="toggle" data-n="'+o._n+'">'+(mall?'ซ่อนรายการ ▲':'ดูรายการ ('+o._n+') ▼')+'</button>'):'')+
     (o.status==='Waiting'?('<button class="mkord" onclick="doCreateOrder(this,\''+esc(o.request_id)+'\')">🚚 สร้างออเดอร์ (จัดรถ)</button>'):'')+
     routeBox(o)+
     '</div>';
+}
+
+/* 🧾 ใบชั่งออก (11 พ.ย.) — Edge pk-slip-ocr อ่านรูปที่คนขับถ่ายตอนออกโรงงาน แล้วคัดลอก slip_* มาที่ pk_requests */
+function slipLine(o){
+  if(!o.slip_status) return '';
+  const ok=o.slip_status==='ok'&&o.slip_net_kg!=null;
+  const nums=ok?'สุทธิ <b>'+num(+o.slip_net_kg)+'</b> กก.'+(o.slip_tare_kg!=null&&o.slip_gross_kg!=null?' <small>(เข้า '+num(+o.slip_tare_kg)+' · ออก '+num(+o.slip_gross_kg)+')</small>':''):'อ่านตัวเลขไม่ได้ — ดูจากรูป';
+  const url=String(o.slip_photo||'');
+  return '<div class="slip'+(ok?'':' bad')+'">🧾 ใบชั่งออก · '+nums+
+    (/^https:\/\//.test(url)?'<a href="'+esc(url).replace(/"/g,'%22')+'" target="_blank" rel="noopener">ดูรูป</a>':'')+'</div>';
 }
 
 function routeBox(o){
