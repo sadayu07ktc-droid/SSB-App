@@ -3,10 +3,21 @@ const GAS_URL='https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjf
 const LIFF_ID='';   // ⚠️ ใส่ LIFF ID ของ SSB-App ที่นี่ (เปิดผ่าน LINE) · เว้นว่าง = เทสด้วย ?uid=<UID> ใน URL
 const PENDING=['Waiting','Planned','Loading'];
 const LABEL={Waiting:'รอจัด',Planned:'จัดแล้ว',Loading:'วิ่งงานแล้ว',Delivered:'ส่งแล้ว'};
+/* 📦 12 พ.ย. คุณน้อง "งาน packing ไม่มีลานขากลับ": สถานะใช้ช่องร่วมกับงานไร่ → โชว์ตามฟอร์มคนขับ (ค่าใน DB เดิม)
+   n = จำนวนจุด (pk_request_items) · ⚠️ ตรงกับ Order_Status pkStatusLabel / dev-drivers stTh */
+function pkStLbl(st,n){
+  if(st==='เริ่มงานแล้ว') return 'ออกจาก SSB แล้ว';
+  if(st==='ถึงลูกค้า') return 'เช็คอินถึงร้านแล้ว';
+  const sl={'ถึงลานวางกระบะ':'rampDrop','ออกจากลูกค้า':'client','ถึงลานขากลับ':'ramp','ถึงลาน':'ramp'}[st]; if(!sl) return '';
+  if(!n) return sl==='ramp'?'ส่งครบทุกจุด':sl==='rampDrop'?'ส่งจุด 1 แล้ว':'ส่งของแล้ว';
+  const ss=n<=1?['client']:n===2?['client','ramp']:['rampDrop','client','ramp'], i=ss.indexOf(sl);
+  if(i<0) return sl==='ramp'?'ส่งครบทุกจุด':sl==='rampDrop'?'ส่งจุด 1 แล้ว':'ส่งของแล้ว';
+  const upto=i===ss.length-1?n:i+1; return upto>=n?`ส่งครบ ${n} จุด`:`ส่งจุด ${upto} แล้ว`;
+}
 /* ข้อความใต้ป้ายสถานะ จากออเดอร์จริง */
 function drvLine(o){const x=o._o;if(!x)return '';
   const has=!!(x.driver_name||x.plate), wait=!has||x.status==='ไม่มีคนขับรับงาน'||x.status==='รอคนขับ'||x.status==='รอคนขับรับงาน';
-  const st=x.status==='ยกเลิก'?'❌ ออเดอร์ถูกยกเลิก':wait?'⏳ รอคนขับรับงาน':x.status==='รับงานแล้ว'?'✅ ได้คนขับแล้ว':x.status==='เสร็จงาน'?'🏁 เสร็จงาน':'🚚 '+x.status;
+  const st=x.status==='ยกเลิก'?'❌ ออเดอร์ถูกยกเลิก':wait?'⏳ รอคนขับรับงาน':x.status==='รับงานแล้ว'?'✅ ได้คนขับแล้ว':x.status==='เสร็จงาน'?'🏁 เสร็จงาน':'🚚 '+(pkStLbl(x.status,(ITEMS[o.request_id]||[]).length)||x.status);
   return '<div class="drv'+(wait?' w':'')+'"><b>'+esc(st)+'</b>'+(has&&!wait?' · 🧑 '+esc(x.driver_name||'-')+(x.plate?' · '+esc(x.plate):''):'')+'<span class="oid">'+esc(x.order_id)+'</span></div>';}
 let ORDERS=[],ITEMS={},ROUTES={},filter='ค้าง';
 const $=s=>document.querySelector(s);
